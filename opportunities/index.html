@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EduBridge — Opportunities</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Top header / portal bar -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="logo">EduBridge</div>
+      <nav class="nav">
+        <span class="nav-item">Opportunities</span>
+        <span class="nav-item">Organizations</span>
+        <span class="nav-item muted">My Profile</span>
+      </nav>
+    </div>
+  </div>
+
+  <main class="container">
+    <header>
+      <div>
+        <h1>Opportunities — Organization CRUD</h1>
+        <p class="lead">Create, view, edit, and delete Opportunity posts.</p>
+      </div>
+    </header>
+
+    <section class="form-section">
+      <h2 id="form-title">Create Opportunity</h2>
+      <form id="opportunity-form">
+        <input type="hidden" id="op-id" />
+
+        <label>Opportunity Title
+          <input id="title" required maxlength="120" />
+        </label>
+
+        <label>Description
+          <textarea id="description" rows="4" required maxlength="1000"></textarea>
+        </label>
+
+        <label>Requirements / Skills
+          <input id="requirements" placeholder="Comma separated (e.g. HTML, CSS, Communication)" />
+        </label>
+
+        <label>Location
+          <input id="location" />
+        </label>
+
+        <label>Deadline for Application
+          <input id="deadline" type="date" />
+        </label>
+
+        <label>Contact Email
+          <input id="contact" type="email" required />
+        </label>
+
+        <div class="form-actions">
+          <button type="submit" id="save-btn">Save</button>
+          <button type="button" id="cancel-btn" class="secondary">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="list-section">
+      <h2>Posted Opportunities</h2>
+      <div id="opportunities-list" class="cards"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

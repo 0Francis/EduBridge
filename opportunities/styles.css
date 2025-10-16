@@ -1,0 +1,204 @@
+:root {
+  --primary: #0077ff;        /* bright blue accent */
+  --primary-dark: #005fd4;   /* deeper blue for hover */
+  --light-bg: #f4f8fb;       /* pale background */
+  --white: #ffffff;
+  --text-dark: #1b1f23;
+  --text-muted: #6b7280;
+  --border: #dbe4ef;
+  --radius: 12px;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-family: "Times New Roman", Times, serif;
+}
+
+/* Global Page Setup */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--light-bg);
+  color: var(--text-dark);
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+  min-height: 100vh;
+  font-family: "Times New Roman", Times, serif;
+}
+
+/* Container */
+.container {
+  width: 100%;
+  max-width: 1100px;
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+/* Header */
+header {
+  grid-column: 1 / -1;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  font-size: 1.8rem;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+header p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* Form Section */
+.form-section {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+#form-title {
+  margin-bottom: 12px;
+  color: var(--primary-dark);
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  color: var(--text-dark);
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background-color: #f9fbfd;
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+  font-family: "Times New Roman", Times, serif;
+}
+
+input:focus,
+textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 119, 255, 0.15);
+  outline: none;
+}
+
+/* Buttons */
+button {
+  margin-top: 14px;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s ease, transform 0.1s ease;
+  font-family: "Times New Roman", Times, serif;
+}
+
+#save-btn {
+  background-color: var(--primary);
+  color: var(--white);
+  box-shadow: 0 3px 10px rgba(0, 119, 255, 0.2);
+}
+
+#save-btn:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+button.secondary {
+  background: #e8eef7;
+  color: var(--primary-dark);
+}
+
+button.secondary:hover {
+  background: #dce7f5;
+}
+
+/* List Section */
+.list-section {
+  padding: 10px;
+}
+
+/* Cards Grid */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+/* Individual Card */
+.card {
+  background-color: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.card h3 {
+  color: var(--primary-dark);
+  margin-bottom: 8px;
+  font-family: "Times New Roman", Times, serif;
+}
+
+.card p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  font-family: "Times New Roman", Times, serif;
+}
+
+/* Card Actions */
+.card .actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.card .actions button {
+  flex: 1;
+  border-radius: var(--radius);
+  border: 1px solid var(--primary);
+  background: var(--white);
+  color: var(--primary);
+  font-size: 0.9rem;
+  padding: 6px 10px;
+}
+
+.card .actions button:hover {
+  background: var(--primary);
+  color: var(--white);
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+}
