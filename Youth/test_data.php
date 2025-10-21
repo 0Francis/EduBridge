@@ -1,48 +1,64 @@
 <?php
-require_once '../database/database.php';
+require_once '../Database/database.php';
 
 $db = new Database();
 
-// Sample test data
+// Sample test data for youthprofiles
 $testYouths = [
     [
-        'name' => 'John Mwangi',
-        'date_of_birth' => '2000-05-15',
-        'gender' => 'Male',
-        'phone_number' => '0712345678',
-        'education_level' => 'University',
-        'email' => 'john.mwangi@example.com'
+        'fullname' => 'John Mwangi',
+        'dateofbirth' => '2000-05-15',
+        'educationlevel' => 'University',
+        'interests' => 'Programming, Sports',
+        'availability' => 'Full-time',
+        'bio' => 'Computer science student'
     ],
     [
-        'name' => 'Mary Wanjiku',
-        'date_of_birth' => '2002-08-22',
-        'gender' => 'Female',
-        'phone_number' => '0723456789',
-        'education_level' => 'Secondary',
-        'email' => 'mary.wanjiku@example.com'
+        'fullname' => 'Mary Wanjiku',
+        'dateofbirth' => '2002-08-22',
+        'educationlevel' => 'Secondary',
+        'interests' => 'Art, Music',
+        'availability' => 'Part-time',
+        'bio' => 'High school student'
     ],
     [
-        'name' => 'James Omondi',
-        'date_of_birth' => '1999-12-10',
-        'gender' => 'Male',
-        'phone_number' => '0734567890',
-        'education_level' => 'Vocational',
-        'email' => 'james.omondi@example.com'
+        'fullname' => 'James Omondi',
+        'dateofbirth' => '1999-12-10',
+        'educationlevel' => 'Vocational',
+        'interests' => 'Mechanics, Engineering',
+        'availability' => 'Full-time',
+        'bio' => 'Vocational training graduate'
     ]
 ];
 
 foreach ($testYouths as $youth) {
-    $sql = "INSERT INTO youths (name, date_of_birth, gender, phone_number, education_level, email) 
-            VALUES (?, ?, ?, ?, ?, ?)";
-    $stmt = $db->conn->prepare($sql);
-    $stmt->execute([
-        $youth['name'],
-        $youth['date_of_birth'],
-        $youth['gender'],
-        $youth['phone_number'],
-        $youth['education_level'],
-        $youth['email']
-    ]);
+    try {
+        // First create user
+        $username = strtolower(str_replace(' ', '.', $youth['fullname'])) . rand(100, 999);
+        $tempPassword = password_hash('password', PASSWORD_DEFAULT);
+        
+        $userSql = "INSERT INTO users (username, password, role) VALUES (?, ?, 'Youth')";
+        $userStmt = $db->conn->prepare($userSql);
+        $userStmt->execute([$username, $tempPassword]);
+        $userid = $db->conn->lastInsertId();
+
+        // Then create youth profile
+        $sql = "INSERT INTO youthprofiles (youthid, fullname, dateofbirth, educationlevel, interests, availability, bio) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $db->conn->prepare($sql);
+        $stmt->execute([
+            $userid,
+            $youth['fullname'],
+            $youth['dateofbirth'],
+            $youth['educationlevel'],
+            $youth['interests'],
+            $youth['availability'],
+            $youth['bio']
+        ]);
+        
+    } catch(PDOException $e) {
+        echo "Error inserting " . $youth['fullname'] . ": " . $e->getMessage() . "<br>";
+    }
 }
 
 echo "Test data inserted successfully! <a href='youth_dashboard.php'>Go to Dashboard</a>";

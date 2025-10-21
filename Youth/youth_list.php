@@ -23,7 +23,7 @@ require_once 'read_youth.php';
     </div>
     
     <?php
-    
+    // Content from read_youth.php will be displayed here
     ?>
 </body>
 </html>

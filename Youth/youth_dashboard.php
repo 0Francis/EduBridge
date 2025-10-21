@@ -1,5 +1,5 @@
 <?php
-require_once '../edubridge-project/Database/database.php';
+require_once '../Database/database.php';
 
 class YouthCRUD {
     private $db;
@@ -10,7 +10,7 @@ class YouthCRUD {
     
     // Get all youths
     public function getAllYouths() {
-        $sql = "SELECT * FROM youths ORDER BY created_at DESC";
+        $sql = "SELECT * FROM youthprofiles ORDER BY fullname";
         $stmt = $this->db->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -18,7 +18,7 @@ class YouthCRUD {
     
     // Get single youth by ID
     public function getYouthById($id) {
-        $sql = "SELECT * FROM youths WHERE id = ?";
+        $sql = "SELECT * FROM youthprofiles WHERE youthid = ?";
         $stmt = $this->db->conn->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -26,42 +26,67 @@ class YouthCRUD {
     
     // Create new youth
     public function createYouth($data) {
-        $sql = "INSERT INTO youths (name, date_of_birth, gender, phone_number, education_level, email) 
-                VALUES (?, ?, ?, ?, ?, ?)";
-        $stmt = $this->db->conn->prepare($sql);
-        return $stmt->execute([
-            $data['name'],
-            $data['date_of_birth'],
-            $data['gender'],
-            $data['phone_number'],
-            $data['education_level'],
-            $data['email']
-        ]);
+        try {
+            // First create user
+            $username = strtolower(str_replace(' ', '.', $data['fullname'])) . rand(100, 999);
+            $tempPassword = password_hash('password', PASSWORD_DEFAULT);
+            
+            $userSql = "INSERT INTO users (username, password, role) VALUES (?, ?, 'Youth')";
+            $userStmt = $this->db->conn->prepare($userSql);
+            $userStmt->execute([$username, $tempPassword]);
+            $userid = $this->db->conn->lastInsertId();
+
+            // Then create youth profile
+            $sql = "INSERT INTO youthprofiles (youthid, fullname, dateofbirth, educationlevel, interests, availability, bio) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $stmt = $this->db->conn->prepare($sql);
+            return $stmt->execute([
+                $userid,
+                $data['fullname'],
+                $data['dateofbirth'],
+                $data['educationlevel'],
+                $data['interests'],
+                $data['availability'],
+                $data['bio']
+            ]);
+        } catch(PDOException $e) {
+            throw new Exception("Error creating youth: " . $e->getMessage());
+        }
     }
     
     // Update youth
     public function updateYouth($id, $data) {
-        $sql = "UPDATE youths 
-                SET name = ?, date_of_birth = ?, gender = ?, phone_number = ?, 
-                    education_level = ?, email = ?, updated_at = CURRENT_TIMESTAMP 
-                WHERE id = ?";
+        $sql = "UPDATE youthprofiles 
+                SET fullname = ?, dateofbirth = ?, educationlevel = ?, 
+                    interests = ?, availability = ?, bio = ?
+                WHERE youthid = ?";
         $stmt = $this->db->conn->prepare($sql);
         return $stmt->execute([
-            $data['name'],
-            $data['date_of_birth'],
-            $data['gender'],
-            $data['phone_number'],
-            $data['education_level'],
-            $data['email'],
+            $data['fullname'],
+            $data['dateofbirth'],
+            $data['educationlevel'],
+            $data['interests'],
+            $data['availability'],
+            $data['bio'],
             $id
         ]);
     }
     
     // Delete youth
     public function deleteYouth($id) {
-        $sql = "DELETE FROM youths WHERE id = ?";
-        $stmt = $this->db->conn->prepare($sql);
-        return $stmt->execute([$id]);
+        try {
+            // Delete youth profile first
+            $sql = "DELETE FROM youthprofiles WHERE youthid = ?";
+            $stmt = $this->db->conn->prepare($sql);
+            $stmt->execute([$id]);
+            
+            // Then delete user
+            $user_sql = "DELETE FROM users WHERE userid = ?";
+            $user_stmt = $this->db->conn->prepare($user_sql);
+            return $user_stmt->execute([$id]);
+        } catch(PDOException $e) {
+            throw new Exception("Error deleting youth: " . $e->getMessage());
+        }
     }
 }
 
@@ -72,37 +97,45 @@ $message = "";
 // Create or Update
 if ($_POST && isset($_POST['submit'])) {
     $data = [
-        'name' => $_POST['name'],
-        'date_of_birth' => $_POST['date_of_birth'],
-        'gender' => $_POST['gender'],
-        'phone_number' => $_POST['phone_number'],
-        'education_level' => $_POST['education_level'],
-        'email' => $_POST['email']
+        'fullname' => $_POST['fullname'],
+        'dateofbirth' => $_POST['dateofbirth'],
+        'educationlevel' => $_POST['educationlevel'],
+        'interests' => $_POST['interests'] ?? '',
+        'availability' => $_POST['availability'] ?? '',
+        'bio' => $_POST['bio'] ?? ''
     ];
     
-    if (isset($_POST['id']) && !empty($_POST['id'])) {
-        // Update existing youth
-        if ($youthCRUD->updateYouth($_POST['id'], $data)) {
-            $message = '<div class="alert alert-success">Youth profile updated successfully!</div>';
+    try {
+        if (isset($_POST['youthid']) && !empty($_POST['youthid'])) {
+            // Update existing youth
+            if ($youthCRUD->updateYouth($_POST['youthid'], $data)) {
+                $message = '<div class="alert alert-success">Youth profile updated successfully!</div>';
+            } else {
+                $message = '<div class="alert alert-danger">Error updating youth profile!</div>';
+            }
         } else {
-            $message = '<div class="alert alert-danger">Error updating youth profile!</div>';
+            // Create new youth
+            if ($youthCRUD->createYouth($data)) {
+                $message = '<div class="alert alert-success">Youth profile created successfully!</div>';
+            } else {
+                $message = '<div class="alert alert-danger">Error creating youth profile!</div>';
+            }
         }
-    } else {
-        // Create new youth
-        if ($youthCRUD->createYouth($data)) {
-            $message = '<div class="alert alert-success">Youth profile created successfully!</div>';
-        } else {
-            $message = '<div class="alert alert-danger">Error creating youth profile!</div>';
-        }
+    } catch(Exception $e) {
+        $message = '<div class="alert alert-danger">' . $e->getMessage() . '</div>';
     }
 }
 
 // Delete youth
 if (isset($_GET['delete_id'])) {
-    if ($youthCRUD->deleteYouth($_GET['delete_id'])) {
-        $message = '<div class="alert alert-success">Youth profile deleted successfully!</div>';
-    } else {
-        $message = '<div class="alert alert-danger">Error deleting youth profile!</div>';
+    try {
+        if ($youthCRUD->deleteYouth($_GET['delete_id'])) {
+            $message = '<div class="alert alert-success">Youth profile deleted successfully!</div>';
+        } else {
+            $message = '<div class="alert alert-danger">Error deleting youth profile!</div>';
+        }
+    } catch(Exception $e) {
+        $message = '<div class="alert alert-danger">' . $e->getMessage() . '</div>';
     }
 }
 
@@ -127,20 +160,9 @@ $youths = $youthCRUD->getAllYouths();
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .card {
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .table-actions {
-            white-space: nowrap;
-        }
-        .hero-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 3rem 0;
-            margin-bottom: 2rem;
-            border-radius: 0 0 20px 20px;
-        }
+        .card { box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .table-actions { white-space: nowrap; }
+        .hero-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3rem 0; margin-bottom: 2rem; border-radius: 0 0 20px 20px; }
     </style>
 </head>
 <body>
@@ -181,56 +203,49 @@ $youths = $youthCRUD->getAllYouths();
                     <div class="card-body">
                         <form method="POST" action="">
                             <?php if ($editYouth): ?>
-                                <input type="hidden" name="id" value="<?php echo $editYouth['id']; ?>">
+                                <input type="hidden" name="youthid" value="<?php echo $editYouth['youthid']; ?>">
                             <?php endif; ?>
                             
                             <div class="mb-3">
-                                <label for="name" class="form-label">Full Name</label>
-                                <input type="text" class="form-control" id="name" name="name" 
-                                       value="<?php echo $editYouth ? htmlspecialchars($editYouth['name']) : ''; ?>" 
+                                <label for="fullname" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="fullname" name="fullname" 
+                                       value="<?php echo $editYouth ? htmlspecialchars($editYouth['fullname']) : ''; ?>" 
                                        required>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="date_of_birth" class="form-label">Date of Birth</label>
-                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" 
-                                       value="<?php echo $editYouth ? $editYouth['date_of_birth'] : ''; ?>" 
+                                <label for="dateofbirth" class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" id="dateofbirth" name="dateofbirth" 
+                                       value="<?php echo $editYouth ? $editYouth['dateofbirth'] : ''; ?>" 
                                        required>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="gender" class="form-label">Gender</label>
-                                <select class="form-select" id="gender" name="gender" required>
-                                    <option value="">Select Gender</option>
-                                    <option value="Male" <?php echo ($editYouth && $editYouth['gender'] == 'Male') ? 'selected' : ''; ?>>Male</option>
-                                    <option value="Female" <?php echo ($editYouth && $editYouth['gender'] == 'Female') ? 'selected' : ''; ?>>Female</option>
-                                    <option value="Other" <?php echo ($editYouth && $editYouth['gender'] == 'Other') ? 'selected' : ''; ?>>Other</option>
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="phone_number" class="form-label">Phone Number</label>
-                                <input type="tel" class="form-control" id="phone_number" name="phone_number" 
-                                       value="<?php echo $editYouth ? $editYouth['phone_number'] : ''; ?>" 
-                                       required>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="education_level" class="form-label">Education Level</label>
-                                <select class="form-select" id="education_level" name="education_level" required>
+                                <label for="educationlevel" class="form-label">Education Level</label>
+                                <select class="form-select" id="educationlevel" name="educationlevel" required>
                                     <option value="">Select Education Level</option>
-                                    <option value="Primary" <?php echo ($editYouth && $editYouth['education_level'] == 'Primary') ? 'selected' : ''; ?>>Primary School</option>
-                                    <option value="Secondary" <?php echo ($editYouth && $editYouth['education_level'] == 'Secondary') ? 'selected' : ''; ?>>Secondary School</option>
-                                    <option value="University" <?php echo ($editYouth && $editYouth['education_level'] == 'University') ? 'selected' : ''; ?>>University</option>
-                                    <option value="Vocational" <?php echo ($editYouth && $editYouth['education_level'] == 'Vocational') ? 'selected' : ''; ?>>Vocational Training</option>
+                                    <option value="Primary" <?php echo ($editYouth && $editYouth['educationlevel'] == 'Primary') ? 'selected' : ''; ?>>Primary</option>
+                                    <option value="Secondary" <?php echo ($editYouth && $editYouth['educationlevel'] == 'Secondary') ? 'selected' : ''; ?>>Secondary</option>
+                                    <option value="University" <?php echo ($editYouth && $editYouth['educationlevel'] == 'University') ? 'selected' : ''; ?>>University</option>
+                                    <option value="Vocational" <?php echo ($editYouth && $editYouth['educationlevel'] == 'Vocational') ? 'selected' : ''; ?>>Vocational</option>
                                 </select>
                             </div>
                             
                             <div class="mb-3">
-                                <label for="email" class="form-label">Email Address</label>
-                                <input type="email" class="form-control" id="email" name="email" 
-                                       value="<?php echo $editYouth ? $editYouth['email'] : ''; ?>" 
-                                       required>
+                                <label for="interests" class="form-label">Interests</label>
+                                <textarea class="form-control" id="interests" name="interests" rows="2"><?php echo $editYouth ? htmlspecialchars($editYouth['interests']) : ''; ?></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="availability" class="form-label">Availability</label>
+                                <input type="text" class="form-control" id="availability" name="availability" 
+                                       value="<?php echo $editYouth ? htmlspecialchars($editYouth['availability']) : ''; ?>" 
+                                       placeholder="e.g., Full-time, Part-time">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="bio" class="form-label">Bio</label>
+                                <textarea class="form-control" id="bio" name="bio" rows="3"><?php echo $editYouth ? htmlspecialchars($editYouth['bio']) : ''; ?></textarea>
                             </div>
                             
                             <div class="d-grid gap-2">
@@ -272,49 +287,46 @@ $youths = $youthCRUD->getAllYouths();
                                         <tr>
                                             <th>ID</th>
                                             <th>Name</th>
-                                            <th>Email</th>
-                                            <th>Phone</th>
+                                            <th>Date of Birth</th>
                                             <th>Education</th>
-                                            <th>Age</th>
+                                            <th>Interests</th>
+                                            <th>Availability</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($youths as $youth): 
-                                            // Calculate age from date of birth
-                                            $dob = new DateTime($youth['date_of_birth']);
-                                            $today = new DateTime();
-                                            $age = $dob->diff($today)->y;
-                                        ?>
+                                        <?php foreach ($youths as $youth): ?>
                                             <tr>
-                                                <td><strong>#<?php echo $youth['id']; ?></strong></td>
+                                                <td><strong>#<?php echo $youth['youthid']; ?></strong></td>
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="avatar-circle bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                            <?php echo strtoupper(substr($youth['name'], 0, 1)); ?>
+                                                            <?php echo strtoupper(substr($youth['fullname'], 0, 1)); ?>
                                                         </div>
                                                         <div>
-                                                            <div class="fw-bold"><?php echo htmlspecialchars($youth['name']); ?></div>
-                                                            <small class="text-muted"><?php echo $youth['gender']; ?></small>
+                                                            <div class="fw-bold"><?php echo htmlspecialchars($youth['fullname']); ?></div>
+                                                            <small class="text-muted"><?php echo strlen($youth['bio']) > 50 ? substr($youth['bio'], 0, 50) . '...' : $youth['bio']; ?></small>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td><?php echo $youth['email']; ?></td>
-                                                <td><?php echo $youth['phone_number']; ?></td>
+                                                <td><?php echo $youth['dateofbirth']; ?></td>
                                                 <td>
-                                                    <span class="badge bg-info"><?php echo $youth['education_level']; ?></span>
+                                                    <span class="badge bg-info"><?php echo $youth['educationlevel']; ?></span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-secondary"><?php echo $age; ?> years</span>
+                                                    <small><?php echo strlen($youth['interests']) > 30 ? substr($youth['interests'], 0, 30) . '...' : $youth['interests']; ?></small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-secondary"><?php echo $youth['availability']; ?></span>
                                                 </td>
                                                 <td class="table-actions">
-                                                    <a href="youth_dashboard.php?edit_id=<?php echo $youth['id']; ?>" 
+                                                    <a href="youth_dashboard.php?edit_id=<?php echo $youth['youthid']; ?>" 
                                                        class="btn btn-sm btn-warning" title="Edit">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
-                                                    <a href="youth_dashboard.php?delete_id=<?php echo $youth['id']; ?>" 
+                                                    <a href="youth_dashboard.php?delete_id=<?php echo $youth['youthid']; ?>" 
                                                        class="btn btn-sm btn-danger" 
-                                                       onclick="return confirm('Are you sure you want to delete <?php echo htmlspecialchars($youth['name']); ?>?')"
+                                                       onclick="return confirm('Are you sure you want to delete <?php echo htmlspecialchars($youth['fullname']); ?>?')"
                                                        title="Delete">
                                                         <i class="fas fa-trash"></i>
                                                     </a>
@@ -340,7 +352,7 @@ $youths = $youthCRUD->getAllYouths();
                                     <div class="card bg-success text-white text-center">
                                         <div class="card-body">
                                             <h4><i class="fas fa-graduation-cap"></i></h4>
-                                            <h5><?php echo count(array_filter($youths, fn($y) => $y['education_level'] === 'University')); ?></h5>
+                                            <h5><?php echo count(array_filter($youths, fn($y) => $y['educationlevel'] === 'University')); ?></h5>
                                             <small>University</small>
                                         </div>
                                     </div>
@@ -349,7 +361,7 @@ $youths = $youthCRUD->getAllYouths();
                                     <div class="card bg-info text-white text-center">
                                         <div class="card-body">
                                             <h4><i class="fas fa-school"></i></h4>
-                                            <h5><?php echo count(array_filter($youths, fn($y) => $y['education_level'] === 'Secondary')); ?></h5>
+                                            <h5><?php echo count(array_filter($youths, fn($y) => $y['educationlevel'] === 'Secondary')); ?></h5>
                                             <small>Secondary</small>
                                         </div>
                                     </div>
@@ -358,7 +370,7 @@ $youths = $youthCRUD->getAllYouths();
                                     <div class="card bg-warning text-white text-center">
                                         <div class="card-body">
                                             <h4><i class="fas fa-tools"></i></h4>
-                                            <h5><?php echo count(array_filter($youths, fn($y) => $y['education_level'] === 'Vocational')); ?></h5>
+                                            <h5><?php echo count(array_filter($youths, fn($y) => $y['educationlevel'] === 'Vocational')); ?></h5>
                                             <small>Vocational</small>
                                         </div>
                                     </div>
