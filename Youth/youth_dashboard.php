@@ -1,5 +1,5 @@
 <?php
-require_once '../database/database.php';
+require_once '../edubridge-project/Database/database.php';
 
 class YouthCRUD {
     private $db;
