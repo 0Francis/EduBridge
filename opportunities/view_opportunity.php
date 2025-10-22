@@ -1,5 +1,5 @@
 <?php
-include 'db_connect.php';
+include 'Database.php';
 $stmt = $conn->query("SELECT * FROM opportunities ORDER BY created_at DESC");
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>

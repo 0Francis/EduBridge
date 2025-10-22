@@ -1,5 +1,5 @@
 <?php
-include 'db_connect.php';
+include 'Database.php';
 
 $id = $_GET['id'];
 $stmt = $conn->prepare("SELECT * FROM opportunities WHERE id=?");

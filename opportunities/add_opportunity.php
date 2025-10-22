@@ -1,5 +1,5 @@
 <?php
-include 'db_connect.php';
+include 'Database.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $title = $_POST['title'];
@@ -13,4 +13,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   echo "<script>alert('Opportunity created successfully!'); window.location='view_opportunities.php';</script>";
 }
-?>
