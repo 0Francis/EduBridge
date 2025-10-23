@@ -1,38 +1,30 @@
 <?php
-require_once '../Database/database.php';
-
-$db = new Database();
+require_once 'youth_controller.php';
 
 if (isset($_GET['id'])) {
+    $controller = new YouthController();
     $id = $_GET['id'];
     
-    try {
-        // Check if youth exists
-        $check_sql = "SELECT * FROM youthprofiles WHERE youthid = ?";
-        $check_stmt = $db->conn->prepare($check_sql);
-        $check_stmt->execute([$id]);
-        $youth = $check_stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($youth) {
-            // Delete from youthprofiles table
-            $sql = "DELETE FROM youthprofiles WHERE youthid = ?";
-            $stmt = $db->conn->prepare($sql);
-            $stmt->execute([$id]);
-            
-            // Also delete from users table
-            $user_sql = "DELETE FROM users WHERE userid = ?";
-            $user_stmt = $db->conn->prepare($user_sql);
-            $user_stmt->execute([$id]);
-            
-            echo "Youth profile deleted successfully!";
-        } else {
-            echo "Youth profile not found!";
-        }
-        
-    } catch(PDOException $e) {
-        echo "Error: " . $e->getMessage();
-    }
+    // Check if youth exists
+    $youth = $controller->getYouth($id);
     
-    header("refresh:2;url=youth_list.php");
+    if ($youth) {
+        try {
+            $success = $controller->deleteYouth($id);
+            if ($success) {
+                header("Location: youth_list.php?message=Youth+profile+deleted+successfully");
+                exit;
+            }
+        } catch(PDOException $e) {
+            header("Location: youth_list.php?message=Error+deleting+profile:" . urlencode($e->getMessage()));
+            exit;
+        }
+    } else {
+        header("Location: youth_list.php?message=Youth+profile+not+found");
+        exit;
+    }
+} else {
+    header("Location: youth_list.php");
+    exit;
 }
 ?>
