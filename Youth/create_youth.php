@@ -1,5 +1,5 @@
 <?php
-require_once '../Database/database.php';
+require_once '../Databases/database.php';
 
 if ($_POST) {
     $db = new Database();
