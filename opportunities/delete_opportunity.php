@@ -1,5 +1,5 @@
 <?php
-include 'db_connect.php';
+require_once '../Databases/databse.php';
 
 if (isset($_GET['id'])) {
   $stmt = $conn->prepare("DELETE FROM opportunities WHERE id=?");

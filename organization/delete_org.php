@@ -1,6 +1,5 @@
 <?php
-require_once '../../config.php';
-require_once '../../db.php';
+require_once '../Databases/databse.php';
 session_start();
 
 $pdo = getDBConnection();
