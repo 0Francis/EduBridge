@@ -1,28 +1,27 @@
 <?php
 require_once '../Databases/databse.php';
 
-$id = $_GET['id'];
-$stmt = $conn->prepare("SELECT * FROM opportunities WHERE id=?");
-$stmt->execute([$id]);
-$opp = $stmt->fetch(PDO::FETCH_ASSOC);
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $title = $_POST['title'];
-  $desc = $_POST['description'];
-  $loc = $_POST['location'];
-  $deadline = $_POST['deadline'];
+    $id = $_POST['opportunity_id'];
+    $title = $_POST['title'];
+    $desc = $_POST['description'];
+    $skills = $_POST['skills_required'];
+    $duration = $_POST['duration'];
+    $deadline = $_POST['deadline'];
+    $location = $_POST['location'];
+    $category = $_POST['category'];
+    $status = $_POST['status'];
 
-  $stmt = $conn->prepare("UPDATE opportunities SET title=?, description=?, location=?, deadline=? WHERE id=?");
-  $stmt->execute([$title, $desc, $loc, $deadline, $id]);
-
-  echo "<script>alert('Updated successfully!'); window.location='view_opportunities.php';</script>";
+    try {
+        $stmt = $conn->prepare("
+            UPDATE opportunities 
+            SET title=?, description=?, skills_required=?, duration=?, deadline=?, location=?, category=?, status=? 
+            WHERE opportunity_id=?
+        ");
+        $stmt->execute([$title, $desc, $skills, $duration, $deadline, $location, $category, $status, $id]);
+        echo "<script>alert('✅ Opportunity updated successfully!'); window.location='../frontend/list.html';</script>";
+    } catch (PDOException $e) {
+        echo "❌ Update failed: " . $e->getMessage();
+    }
 }
 ?>
-
-<form method="POST" class="p-4">
-  <input name="title" value="<?= $opp['title'] ?>" class="form-control mb-2">
-  <textarea name="description" class="form-control mb-2"><?= $opp['description'] ?></textarea>
-  <input name="location" value="<?= $opp['location'] ?>" class="form-control mb-2">
-  <input type="date" name="deadline" value="<?= $opp['deadline'] ?>" class="form-control mb-2">
-  <button class="btn btn-primary">Update</button>
-</form>
